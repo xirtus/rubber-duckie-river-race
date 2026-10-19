@@ -1,5 +1,7 @@
 # Rubber Duckie River Race
 
+![Rubber Duckie River Race scrapbook](docs/screenshot.jpg)
+
 A playable Three.js wilderness spectator race. Choose one of 100 ducks, walk the riverbanks, take live photographs, predict the fork, and keep a persistent scrapbook. Player input has no path into duck physics.
 
 ```sh
