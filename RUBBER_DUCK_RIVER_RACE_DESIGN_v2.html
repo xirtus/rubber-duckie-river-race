@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rubber Duckie River Race — One-Shot Game Design</title>
+<meta name="description" content="Concise production design and one-shot implementation brief for a Three.js/WebGPU rubber duck river race game.">
+<style>
+:root{
+  --bg:#07130f;
+  --panel:#0d1d17;
+  --panel2:#11271e;
+  --ink:#edf8ee;
+  --muted:#a9c7b5;
+  --line:#244c39;
+  --duck:#ffd94a;
+  --water:#70d8e8;
+  --moss:#75c889;
+  --gold:#eab94d;
+  --danger:#ff8f72;
+  --code:#07100d;
+  --shadow:0 16px 50px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:
+  radial-gradient(circle at 85% 10%,rgba(112,216,232,.10),transparent 25%),
+  radial-gradient(circle at 20% 85%,rgba(117,200,137,.08),transparent 28%),
+  var(--bg);
+  color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+button,a{font:inherit}
+a{color:var(--water)}
+.shell{min-height:100vh;display:grid;grid-template-columns:290px minmax(0,1fr)}
+aside{
+  position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 24px;
+  border-right:1px solid var(--line);background:rgba(7,19,15,.94);backdrop-filter:blur(14px)
+}
+.brand{padding:0 10px 20px}
+.kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--moss);font-weight:800}
+.brand h1{font-size:23px;line-height:1.03;margin:8px 0 8px}
+.brand p{font-size:12.5px;line-height:1.5;color:var(--muted);margin:0}
+nav{display:grid;gap:5px}
+nav button{
+  border:0;border-left:3px solid transparent;background:transparent;color:var(--muted);
+  text-align:left;padding:10px 12px;border-radius:0 9px 9px 0;cursor:pointer;font-weight:700;font-size:13px
+}
+nav button:hover{background:rgba(117,200,137,.07);color:var(--ink)}
+nav button.active{background:rgba(255,217,74,.08);border-left-color:var(--duck);color:var(--duck)}
+.aside-note{margin:20px 10px 0;padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:11.5px;line-height:1.5}
+main{padding:42px clamp(24px,5vw,76px) 80px;max-width:1280px;width:100%}
+.page{display:none;animation:fade .18s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--moss);font-weight:900}
+h2{font-size:clamp(34px,5vw,64px);letter-spacing:-.04em;line-height:.94;margin:10px 0 18px}
+h3{font-size:22px;margin:34px 0 12px}
+h4{font-size:14px;margin:22px 0 7px;color:var(--duck);text-transform:uppercase;letter-spacing:.08em}
+.lede{font-size:19px;line-height:1.6;color:#d3e9da;max-width:880px}
+p,li{line-height:1.62}
+.small{font-size:12.5px;color:var(--muted)}
+.rule{
+  margin:24px 0;padding:18px 20px;border:1px solid rgba(255,217,74,.35);
+  background:rgba(255,217,74,.055);border-radius:14px;font-size:18px;font-weight:900
+}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:18px;border-radius:16px;box-shadow:var(--shadow)}
+.card h3,.card h4{margin-top:0}
+.metric{font-size:28px;font-weight:950;letter-spacing:-.03em;color:var(--duck)}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);font-weight:800}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:15px 0}
+.flow span{background:var(--panel);border:1px solid var(--line);padding:7px 10px;border-radius:999px;font-size:12px}
+.flow b{color:var(--water)}
+ul.tight,ol.tight{padding-left:20px}
+.tight li{margin:5px 0}
+code,kbd,pre{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{
+  white-space:pre-wrap;background:var(--code);border:1px solid var(--line);padding:16px;border-radius:14px;
+  color:#cce7d5;line-height:1.48;overflow:auto;font-size:12.5px
+}
+table{width:100%;border-collapse:collapse;margin:15px 0;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:10px 9px;text-align:left;vertical-align:top}
+th{color:var(--moss);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 8px;margin:2px;font-size:10.5px;color:var(--muted)}
+.duck{color:var(--duck)}
+.water{color:var(--water)}
+.gold{color:var(--gold)}
+.danger{color:var(--danger)}
+.quote{border-left:4px solid var(--water);padding:10px 18px;margin:20px 0;color:#d8f2f5;background:rgba(112,216,232,.05)}
+.map{
+  font-family:"SFMono-Regular",Consolas,monospace;background:#06100c;border:1px solid var(--line);
+  padding:18px;border-radius:14px;line-height:1.25;color:#bce8cd;overflow:auto
+}
+.checks{columns:2;column-gap:30px;padding-left:20px}
+.checks li{break-inside:avoid;margin:6px 0}
+.topbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:18px}
+.action{
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 11px;border-radius:9px;cursor:pointer;font-weight:800;font-size:12px
+}
+.action:hover{border-color:var(--moss)}
+.one-shot{border:1px solid rgba(112,216,232,.28);background:rgba(112,216,232,.045)}
+.source{font-size:12px;color:var(--muted)}
+.source a{word-break:break-all}
+footer{border-top:1px solid var(--line);margin-top:50px;padding-top:18px;color:var(--muted);font-size:11px}
+@media(max-width:880px){
+  .shell{grid-template-columns:1fr}
+  aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  nav button{border-left:0;border-bottom:2px solid transparent;border-radius:8px}
+  nav button.active{border-bottom-color:var(--duck)}
+  main{padding-top:26px}
+  .grid,.grid3{grid-template-columns:1fr}
+  .checks{columns:1}
+}
+@media print{
+  body{background:white;color:#111}
+  aside,.topbar{display:none}
+  .shell{display:block}
+  main{max-width:none;padding:0}
+  .page{display:block!important;page-break-after:always}
+  .card,pre,.map,.rule{box-shadow:none;background:#fff;color:#111;border-color:#bbb}
+  .lede,.small,.source{color:#333}
+  a{color:#111}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand">
+      <div class="kicker">3JSE · One-Shot Design</div>
+      <h1>Rubber Duckie<br>River Race</h1>
+      <p>Photoreal wilderness. Real river physics. 100 uncontrollable ducks. One kid running beside them.</p>
+    </div>
+    <nav id="nav"></nav>
+    <div class="aside-note">
+      <b>Non-negotiable:</b><br>
+      The player can never affect the race. The simulation decides. Rendering witnesses.
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <button class="action" onclick="window.print()">Print / PDF</button>
+      <button class="action" onclick="showPage('oneshot')">One-Shot Brief</button>
+    </div>
+
+    <section class="page active" id="vision" data-title="01 · Vision">
+      <div class="eyebrow">Page 01 · Product vision</div>
+      <h2>A nature hike chasing chaos.</h2>
+      <p class="lede">A first-person Three.js/WebGPU game about following one rubber duck through a huge-looking, intricately folded mountain river race. Roughly 100 ducks are released together. The player controls only a child running alongside the river. Water, gravity, collisions, turbulence, geometry and chance determine everything else.</p>
+
+      <div class="rule">THE PLAYER CAN NEVER STEER, TOUCH, BLOCK, BOOST, RESCUE, SABOTAGE OR OTHERWISE AFFECT ANY DUCK OR THE RIVER RACE.</div>
+
+      <div class="grid3">
+        <div class="card"><div class="metric">~100</div><div class="label">ducks per race</div><p>About 90% classic yellow; about 10% special novelty ducks.</p></div>
+        <div class="card"><div class="metric">4–8 min</div><div class="label">target race duration</div><p>Long enough for repeated reversals, rediscovery and dramatic waterfalls.</p></div>
+        <div class="card"><div class="metric">1st person</div><div class="label">canonical camera</div><p>Third-person exists to show the little-boy character and contextual animation.</p></div>
+      </div>
+
+      <h3>Emotional target</h3>
+      <div class="quote">“COME ON #37—NO! GET OUT OF THE EDDY! … HOW DID BATMAN DUCK GET INTO FIRST?”</div>
+      <p>The game must feel like a real sporting event occurring inside an impossibly beautiful Yosemite/redwood landscape. No rubber-band AI, no scripted winner, no hidden help for the player’s duck.</p>
+
+      <h3>Identity</h3>
+      <ul class="tight">
+        <li><b>Serious nature rendering + absurd subject:</b> photoreal water, granite, redwoods, mist and mountain light surrounding tiny rubber ducks.</li>
+        <li><b>Race photographer:</b> the player is effectively the event photographer, sprinting between scenic checkpoints to capture the best moments of an uncontrollable race.</li>
+        <li><b>Spectator-racing:</b> player skill is keeping up, choosing trails, reaching overlooks, predicting events and being in position when the important moments happen.</li>
+        <li><b>Real uncertainty:</b> the river can create miraculous comebacks, hopeless eddies, pileups, forks and waterfall reshuffles.</li>
+        <li><b>Every shot beautiful:</b> nature is deliberately used to obscure future river bends and compose strong views.</li>
+      </ul>
+    </section>
+
+    <section class="page" id="loop" data-title="02 · Rules & Loop">
+      <div class="eyebrow">Page 02 · Core loop</div>
+      <h2>Release. Run. Lose them. Find them again.</h2>
+
+      <div class="flow">
+        <span>Festival start</span><b>→</b><span>Gate opens</span><b>→</b><span>100 ducks collide</span><b>→</b><span>Player runs</span><b>→</b><span>River disappears behind forest</span><b>→</b><span>Rediscover race</span><b>→</b><span>Waterfall / fork / rapids</span><b>→</b><span>Finish pond</span>
+      </div>
+
+      <h3>Race start</h3>
+      <ol class="tight">
+        <li>Player is assigned a numbered duck.</li>
+        <li>All ducks use an equal standardized race-physics profile.</li>
+        <li>Visible cosmetic shape does not alter competitive physics.</li>
+        <li>Starting arrangement, water state and RNG streams come from the race seed.</li>
+        <li>Gate opens and the simulation runs without player intervention.</li>
+      </ol>
+
+      <h3>What the player actually does</h3>
+      <div class="grid">
+        <div class="card">
+          <h4>Race photographer</h4>
+          <p>Run to marked or discoverable scenic photo checkpoints before the duck pack arrives. Frame the race, shoot at the decisive moment, and build a unique album from the race you actually witnessed.</p>
+        </div>
+        <div class="card">
+          <h4>Traversal</h4>
+          <p>Walk, run, sprint, jump, vault, step across stones, use footbridges, climb short trail features and take natural shortcuts across horseshoe bends. Route knowledge determines whether you reach the next photo opportunity in time.</p>
+        </div>
+        <div class="card">
+          <h4>Observation</h4>
+          <p>Track the owned duck, watch standings, read the river, spot rare ducks and wildlife, choose overlooks and predict what is about to happen.</p>
+        </div>
+        <div class="card">
+          <h4>End-of-race album</h4>
+          <p>After the finish, the game develops the race into a visual album showing the player's actual photographs, captions, rare sightings, best frame and the final fate of the owned duck.</p>
+        </div>
+      </div>
+
+      <h3>Forbidden mechanics</h3>
+      <p><span class="tag danger">NO DUCK CONTROL</span><span class="tag danger">NO POWERUPS</span><span class="tag danger">NO BOOSTS</span><span class="tag danger">NO ITEM ATTACKS</span><span class="tag danger">NO PLAYER COLLISION WITH DUCKS</span><span class="tag danger">NO RUBBER BANDING</span><span class="tag danger">NO SCRIPTED WINNER</span></p>
+
+      <h3>Minimal HUD</h3>
+      <pre>DUCK #37                   14 / 100
+▼ 42 m                     COURSE  ███████░░░</pre>
+      <p class="small">Immersive mode may remove the directional arrow and force the player to follow water, sound and trails naturally.</p>
+    </section>
+
+    <section class="page" id="level" data-title="03 · Folded Level">
+      <div class="eyebrow">Page 03 · Level architecture</div>
+      <h2>A two-kilometer river folded into a forest.</h2>
+      <p class="lede">Use theme-park spatial deception: a long river snakes back and forth through a relatively compact descending valley. Giant trunks, terrain, granite, mist and vegetation prevent the player from seeing nearby future sections.</p>
+
+      <div class="grid3">
+        <div class="card"><div class="metric">~1.5–2 km</div><div class="label">initial river target</div><p>Physical duck travel distance.</p></div>
+        <div class="card"><div class="metric">~400×500 m</div><div class="label">initial map target</div><p>Compact footprint; tune after profiling and playtest.</p></div>
+        <div class="card"><div class="metric">≤2</div><div class="label">future bends visible</div><p>At player eye height, ideally only one future river bend is readable.</p></div>
+      </div>
+
+      <div class="map">START ─────╮
+            │    🌲🌲🌲
+     ╭──────╯   ╭─────────╮
+     │  🌲      │         │
+     ╰────╮  ╭──╯   🌲    │
+          │  │            │
+      ╭───╯  ╰────╮       │
+      │   WATERFALL ↓      │
+      ╰────────╮    🌲     │
+               ╰────── FINISH</div>
+
+      <h3>Terrain must make hydrological sense</h3>
+      <p>The river is not a flat lazy-river spline. The entire valley descends. Successive switchbacks sit slightly lower than earlier ones; waterfalls provide major elevation resets. No physically impossible crossing rivers.</p>
+
+      <h3>Reveal rhythm</h3>
+      <div class="rule">OBSCURE → RUN → HEAR WATER → REVEAL DUCKS → WATCH EVENT → OBSCURE AGAIN</div>
+      <p>The player should repeatedly lose visual contact and then burst through trees onto a cinematic view. A duck that was 51st may be 14th when rediscovered.</p>
+
+      <h3>River cells / scenic chapters</h3>
+      <table>
+        <tr><th>#</th><th>Cell</th><th>Purpose</th></tr>
+        <tr><td>01</td><td>Festival Pool</td><td>100-duck release, crowd, readable start.</td></tr>
+        <tr><td>02</td><td>Narrow Redwood Run</td><td>First acceleration; trunks hide future course.</td></tr>
+        <tr><td>03</td><td>Granite Rapids</td><td>Rock collisions and first major reshuffle.</td></tr>
+        <tr><td>04</td><td>Redwood Cathedral</td><td>Quiet, shaded, monumental forest scale.</td></tr>
+        <tr><td>05</td><td>Horseshoe Bend</td><td>Player shortcut; ducks take long route.</td></tr>
+        <tr><td>06</td><td>Gold Bend</td><td>Clear shallows, gravel bars, visible gold flakes.</td></tr>
+        <tr><td>07</td><td>Fallen Giant</td><td>Log obstruction / natural player crossing.</td></tr>
+        <tr><td>08</td><td>Triple Fork</td><td>Three genuine channels; huge race divergence.</td></tr>
+        <tr><td>09</td><td>First Falls</td><td>Small dramatic drop and plunge pool.</td></tr>
+        <tr><td>10</td><td>Fern Basin</td><td>Recovery and dense ground vegetation.</td></tr>
+        <tr><td>11</td><td>Granite Slot</td><td>Narrow fast chute and acoustics.</td></tr>
+        <tr><td>12</td><td>Old Bridge</td><td>High-angle spectator reveal.</td></tr>
+        <tr><td>13</td><td>Mist Gorge</td><td>Occlusion, spray and sound-led navigation.</td></tr>
+        <tr><td>14</td><td>Grand Cascade</td><td>Visual centerpiece; violent reshuffle.</td></tr>
+        <tr><td>15</td><td>Final Rapids</td><td>Fastest section, boulders and foam.</td></tr>
+        <tr><td>16</td><td>Finish Pond</td><td>Sudden calm, precise finish detection.</td></tr>
+      </table>
+
+      <h3>Photo checkpoints</h3>
+      <p>Each major river cell should contain one or more intentionally composed photography positions. The race itself creates the timing pressure: reach the spot before the pack passes, choose a lens/framing, and capture the moment. Missing a checkpoint is allowed; the resulting incomplete album is part of that race's story.</p>
+      <ul class="tight">
+        <li><b>Waterfall lip:</b> catch multiple ducks airborne at once.</li>
+        <li><b>Old bridge:</b> high-angle shot of the pack entering rapids.</li>
+        <li><b>Gold Bend:</b> low reflective shot with gold flashes beneath clear water.</li>
+        <li><b>Triple Fork:</b> capture three groups splitting into separate channels.</li>
+        <li><b>Redwood Cathedral:</b> tiny ducks framed beneath enormous trunks.</li>
+        <li><b>Finish pond:</b> final crossing / celebration / photo finish.</li>
+      </ul>
+      <p>Some checkpoints are official press positions; others are hidden scenic spots discovered through exploration. The best routes chain several viewpoints together efficiently.</p>
+
+      <h3>Player trail network</h3>
+      <ul class="tight">
+        <li>Trail is independent of the river and may cut directly across bends.</li>
+        <li>Use footbridges, fallen logs, ridges, stairs beside waterfalls, stepping stones and short scrambles.</li>
+        <li>Traversal changes <b>where the player witnesses the race</b>, never the race outcome.</li>
+        <li>Natural occluders also support streaming, LOD and rendering efficiency.</li>
+      </ul>
+    </section>
+
+    <section class="page" id="water" data-title="04 · Water & Physics">
+      <div class="eyebrow">Page 04 · River simulation</div>
+      <h2>The river is the race AI.</h2>
+      <p class="lede">Separate fluid truth from water beauty. The flow solver determines velocity and outcomes. Rendering derives surface shape, foam, optics, spray and sparkle from that state.</p>
+
+      <h3>Hybrid water stack</h3>
+      <div class="grid">
+        <div class="card">
+          <h4>Authoritative river flow</h4>
+          <p>GPU-friendly shallow-water / heightfield flow simulation over real terrain. Store water depth and horizontal velocity. Gravity, bed slope and obstacles create the current.</p>
+        </div>
+        <div class="card">
+          <h4>Poseidon-derived rendering</h4>
+          <p>Study/reuse compatible techniques for high-end WebGPU/TSL water optics, surface detail, Fresnel, sun glitter, foam and measured-looking shading. Do not pretend the FFT ocean is itself a downhill river solver.</p>
+        </div>
+        <div class="card">
+          <h4>Volumetric zones</h4>
+          <p>Use a Tiamat/SPH-style approach only where water leaves the heightfield: waterfalls, plunge pools, heavy spray and selected violent rapids.</p>
+        </div>
+        <div class="card">
+          <h4>Derived effects</h4>
+          <p>Foam from flow gradients/obstructions, wet rocks from actual splash/water facts, mist from falls, audio intensity from water velocity and nearby cascades.</p>
+        </div>
+      </div>
+
+      <h3>Simulation pipeline</h3>
+      <pre>terrain elevation
++ river boundary/inflow
++ gravity
++ obstacle field
+      ↓
+authoritative depth + velocity field
+      ↓
+duck buoyancy / drag / torque / collisions
+      ↓
+race state + finish order
+
+authoritative water state
+      ↓
+presentation projection
+      ↓
+surface detail / foam / refraction / spray / audio</pre>
+
+      <h3>Water requirements</h3>
+      <ul class="tight">
+        <li>Clear shallow zones show stones, gravel and gold beneath the surface.</li>
+        <li>Depth changes water absorption and color naturally.</li>
+        <li>Rapids visibly correspond to real high velocity / obstruction zones.</li>
+        <li>Waterfalls can detach from the heightfield and reconnect to a lower river zone.</li>
+        <li>No frame-rate-dependent flow or duck outcomes.</li>
+        <li>Provide debug overlays for depth, velocity vectors, foam source, obstacle field and duck forces.</li>
+      </ul>
+
+      <p class="source">Reference: Owen Yuwono Poseidon — <a href="https://github.com/owenyuwono/poseidon">github.com/owenyuwono/poseidon</a></p>
+      <p class="source">Reference: Owen Yuwono fluid projects / Tiamat — <a href="https://github.com/owenyuwono">github.com/owenyuwono</a></p>
+    </section>
+
+    <section class="page" id="ducks" data-title="05 · Ducks & Race">
+      <div class="eyebrow">Page 05 · Duck simulation & roster</div>
+      <h2>Ninety yellow ducks. Ten weirdos.</h2>
+
+      <h3>Roster target</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="metric duck">~90%</div><div class="label">classic field</div>
+          <p>Several clean Sketchfab yellow-duck models, with subtle material/number variation. Prefer efficient CC-licensed assets.</p>
+        </div>
+        <div class="card">
+          <div class="metric gold">~10%</div><div class="label">novelty field</div>
+          <p>Costume, pirate, steampunk, unusual-color or other distinctive rubber ducks. Rare enough that seeing one matters.</p>
+        </div>
+      </div>
+
+      <h3>Competitive fairness</h3>
+      <div class="rule">VISUAL MODEL ≠ PHYSICS BODY</div>
+      <pre>DuckEntity
+├─ stableId
+├─ raceNumber
+├─ visualAssetId
+├─ noveltyClass
+└─ STANDARD_RACE_DUCK physics profile
+   ├─ identical mass
+   ├─ identical buoyancy volume
+   ├─ identical center of mass
+   ├─ identical drag
+   └─ identical collision proxy</pre>
+      <p>A pirate hat, cape, helmet or different mesh must never create a racing advantage. Cosmetic appendages may animate visually but do not alter authoritative forces.</p>
+
+      <h3>Duck dynamics</h3>
+      <ul class="tight">
+        <li>Sample local water depth/height/normal/velocity around the standardized hull.</li>
+        <li>Compute buoyancy, pitch, roll, yaw, drag and current transport.</li>
+        <li>Support duck↔duck, duck↔bank, duck↔rock and duck↔log collision.</li>
+        <li>Ducks may bob, spin, roll, wedge, pile up, enter eddies, escape, split at forks and tumble through falls.</li>
+        <li>Use stable IDs and deterministic ordering rules for collision resolution where needed.</li>
+      </ul>
+
+      <h3>Sketchfab asset policy</h3>
+      <ul class="tight">
+        <li>Acquire downloadable assets only under licenses compatible with the intended use.</li>
+        <li>Store source URL, creator, license, original filename, processing notes and attribution in the asset manifest.</li>
+        <li>Create <code>THIRD_PARTY.md</code> / <code>ATTRIBUTIONS.md</code> automatically.</li>
+        <li>Do not ship ripped game characters, trademarked novelty characters or ambiguous assets without rights review.</li>
+        <li>IP-character ducks may be marked <b>prototype-only</b>; shipping roster should use cleared originals.</li>
+      </ul>
+
+      <h3>Good lightweight base-duck references</h3>
+      <p class="source">Ikki_3d Rubber Duck — ~3.5k triangles, CC Attribution: <a href="https://sketchfab.com/3d-models/rubber-duck-f1de4fc390db4266a509b9739350512a">Sketchfab</a></p>
+      <p class="source">irchizhik Rubber Duck — ~4.5k triangles, CC Attribution: <a href="https://sketchfab.com/3d-models/rubber-duck-8e24a6d4d15c4c62ae053cfa67d99e67">Sketchfab</a></p>
+      <p class="source">MMSMAR Rubber Duck — ~1k triangles, CC Attribution: <a href="https://sketchfab.com/3d-models/rubber-duck-70caaca294d243d1b83d815184a83bb6">Sketchfab</a></p>
+    </section>
+
+    <section class="page" id="player" data-title="06 · Player & Animation">
+      <div class="eyebrow">Page 06 · Player embodiment</div>
+      <h2>A little boy chasing his duck.</h2>
+
+      <h3>Cameras</h3>
+      <div class="grid">
+        <div class="card">
+          <h4>First person — default</h4>
+          <p>Canonical experience. Human-scale camera makes redwoods and cliffs enormous. Responsive mouse look; no forced cinematic head turns. Footsteps, breath, foliage and water audio provide embodiment.</p>
+        </div>
+        <div class="card">
+          <h4>Third person — optional</h4>
+          <p>Shows a T/A-pose little-boy model acquired legally from Sketchfab, retargeted to a consistent humanoid rig, with context-sensitive Mixamo animation blending.</p>
+        </div>
+      </div>
+
+      <h3>Character asset acceptance</h3>
+      <p><span class="tag">GLB/FBX</span><span class="tag">humanoid rig</span><span class="tag">clean weights</span><span class="tag">Y-up normalized</span><span class="tag">correct scale</span><span class="tag">shipping-compatible license</span><span class="tag">Mixamo test pass</span></p>
+
+      <h3>Mixamo animation harvest</h3>
+      <table>
+        <tr><th>Family</th><th>Search / acquire</th></tr>
+        <tr><td>Locomotion</td><td>idle, walk, fast walk, jog, run, sprint, turn, stop, stumble</td></tr>
+        <tr><td>Traversal</td><td>jump, running jump, land, climb, step-up, vault, balance</td></tr>
+        <tr><td>Playful</td><td>skip, playful run, excited run</td></tr>
+        <tr><td>Interest</td><td>look around, look down, peer, lean, point, amazed, surprised</td></tr>
+        <tr><td>Emotion</td><td>cheer, clap, celebrate, fist pump, disappointed, frustrated</td></tr>
+      </table>
+      <p>Use the existing bulk-downloader workflow to build an animation library, then normalize clips into an animation manifest. Trim/loop and retarget in the pipeline; do not let one-off FBX peculiarities leak into gameplay code.</p>
+
+      <h3>Contextual animation director</h3>
+      <pre>player locomotion state
++ terrain/traversal state
++ owned duck distance
++ owned duck rank change
++ nearby race event
+      ↓
+animation intent
+      ↓
+blend tree / one-shot reaction layer</pre>
+
+      <table>
+        <tr><th>Race context</th><th>Third-person reaction</th></tr>
+        <tr><td>Duck pulling away</td><td>more urgent run/sprint selection</td></tr>
+        <tr><td>Duck enters rapids</td><td>interested / forward-leaning reaction when idle</td></tr>
+        <tr><td>Duck drops over waterfall</td><td>surprise one-shot, never movement takeover</td></tr>
+        <tr><td>Duck gains many places</td><td>excited locomotion flavor</td></tr>
+        <tr><td>Duck trapped in eddy</td><td>concerned / impatient idle</td></tr>
+        <tr><td>Duck wins</td><td>full celebration after finish is authoritative</td></tr>
+      </table>
+
+      <h3>Important control rule</h3>
+      <p>Reaction animation can flavor the current legal movement state; it must not steal the controls, teleport the character or force camera aim.</p>
+
+      <p class="source">Mixamo custom-character workflow: <a href="https://helpx.adobe.com/creative-cloud/help/mixamo-rigging-animation.html">Adobe Mixamo rigging/animation documentation</a></p>
+    </section>
+
+    <section class="page" id="world" data-title="07 · World & Art">
+      <div class="eyebrow">Page 07 · Environment & visual language</div>
+      <h2>Unreal-esque nature, not an empty demo forest.</h2>
+      <p class="lede">The environment must be dense, tactile and compositionally intentional. Prefer excellent existing assets over mediocre procedural replacements. Procedural systems fill gaps and create variation.</p>
+
+      <h3>Asset hierarchy</h3>
+      <pre>HERO
+premium/scanned redwoods, sequoias, boulders, logs, bridge props
+
+MIDGROUND
+optimized LODs + repeated variants + procedural vegetation
+
+GROUND
+ferns, moss, needles, stones, roots, grasses, wet mud, mushrooms
+
+DISTANCE
+simplified forest masses + mountain geometry + panorama/atmosphere</pre>
+
+      <h3>Redwood strategy</h3>
+      <ul class="tight">
+        <li>Use the best legal photogrammetry/game-ready redwood/sequoia assets available for hero trees.</li>
+        <li>Huge trunks are also level-design walls and occlusion devices.</li>
+        <li>Generate LODs/impostors where appropriate; never draw every leaf at hero quality.</li>
+        <li>Use Owen's Dryad ideas/code only when license/compatibility permits, primarily for procedural secondary vegetation and variation rather than replacing hero scans.</li>
+        <li>Use Gaia-style deterministic grass/ground vegetation where useful.</li>
+      </ul>
+
+      <h3>Materials</h3>
+      <p>Physically based granite, wet/dry rock response, moss, bark, soil and river gravel. Use relief/parallax approaches where helpful, but close hero geometry should remain genuinely dimensional. Texture quality must hold up in first person.</p>
+
+      <h3>Gold</h3>
+      <p>Gold flakes appear naturally in selected clear-water gravel bars and catch the sun as tiny metallic flashes. They are environmental detail, not required collectibles.</p>
+
+      <h3>Mountain / sky depth stack</h3>
+      <div class="flow">
+        <span>real local terrain</span><b>→</b><span>mid-distance granite cliffs</span><b>→</b><span>distant mountain mass/panorama</span><b>→</b><span>atmosphere / clouds / sky</span>
+      </div>
+
+      <h3>Lighting & atmosphere</h3>
+      <ul class="tight">
+        <li>Strong sun shafts only when physically/plausibly supported by canopy and mist.</li>
+        <li>Waterfall spray and river mist create depth and selectively hide nearby geometry.</li>
+        <li>Wet surfaces darken/reflect near actual water/splash zones.</li>
+        <li>Restrained postprocessing: exposure, tone mapping, subtle bloom where justified; no smeared “cinematic” filter that destroys clarity.</li>
+      </ul>
+
+      <p class="source">Dryad: <a href="https://github.com/owenyuwono/dryad">github.com/owenyuwono/dryad</a></p>
+      <p class="source">Gaia / Demiurge / related experiments: <a href="https://github.com/owenyuwono">github.com/owenyuwono</a></p>
+    </section>
+
+    <section class="page" id="photography" data-title="08 · Photography Loop">
+      <div class="eyebrow">Page 08 · Photography, progression & replayability</div>
+      <h2>The race becomes your photo assignment.</h2>
+      <p class="lede">Photography is the main gamification layer because it rewards getting to the right place at the right time without ever touching the race simulation. Every run produces both a sporting result and a personal visual record.</p>
+
+      <h3>Photo mode is active gameplay</h3>
+      <ul class="tight">
+        <li>Raise/lower the camera instantly; the world never pauses.</li>
+        <li>Simple zoom/focal-length control, optional focus assist and horizon guide.</li>
+        <li>No free-flying live camera. The photograph must be taken from where the child physically reached.</li>
+        <li>Capture stores race seed, simulation tick, camera transform, visible duck IDs, scene tags and score metadata.</li>
+      </ul>
+
+      <h3>Photo scoring</h3>
+      <table>
+        <tr><th>Signal</th><th>Examples</th></tr>
+        <tr><td>Race moment</td><td>overtake, pack split, waterfall launch, eddy escape, photo finish</td></tr>
+        <tr><td>Subject value</td><td>owned duck, rare novelty duck, large visible pack, wildlife encounter</td></tr>
+        <tr><td>Composition</td><td>clear subject, framing, horizon, foreground/background depth, landmark inclusion</td></tr>
+        <tr><td>Rarity</td><td>rainbow mist, unusual weather, legendary duck, improbable pileup</td></tr>
+        <tr><td>Checkpoint bonus</td><td>shot captured from a designated scenic position before the event passes</td></tr>
+      </table>
+      <p>Favor deterministic geometric/event checks and simple image-space heuristics. Do not use an opaque “AI critic” as the primary score.</p>
+
+      <h3>End-of-race album</h3>
+      <pre>RIVER RACE #1842
+DUCK #37 — FINISHED 12TH
+
+[ Start Gate ] [ Cathedral Grove ] [ Triple Fork ]
+[ Gold Bend  ] [ Grand Cascade   ] [ Photo Finish ]
+
+BEST FRAME: “Grand Cascade”
+RARE SIGHTING: Pirate Duck #81
+EVENT CAPTURED: #37 gained 19 places
+ALBUM GRADE: A</pre>
+      <p>The finish automatically lays out a scrapbook/contact sheet from the player's real photos. Favorites persist in the River Album across races.</p>
+
+      <h3>Spectator assignments</h3>
+      <ul class="tight">
+        <li>Photograph your duck at three named landmarks.</li>
+        <li>Reach Grand Cascade before the leading pack.</li>
+        <li>Capture a novelty duck and your owned duck in one frame.</li>
+        <li>Photograph an overtake, eddy escape or fork split.</li>
+        <li>Complete the race without the tracker arrow.</li>
+        <li>Capture five official checkpoints.</li>
+        <li>Finish within 20 seconds of your duck.</li>
+      </ul>
+
+      <h3>Prediction mini-game</h3>
+      <p>At safe viewpoints make harmless predictions: which fork the owned duck will take, its rank after the falls, or which duck reaches a marker first. Correct calls earn stamps/ribbons and reward learning the river.</p>
+
+      <h3>Duck Book & wildlife journal</h3>
+      <ul class="tight">
+        <li>Photograph classic, uncommon, rare and legendary novelty duck types.</li>
+        <li>Entries record races seen, best/worst finish, waterfall tumbles, eddy time and favorite photos.</li>
+        <li>Optional wildlife journal: deer, trout, frogs, butterflies, woodpeckers, otters and other river-life sightings.</li>
+      </ul>
+
+      <h3>Park exploration & route mastery</h3>
+      <ul class="tight">
+        <li>Discover hidden overlooks, named redwoods, abandoned mining relics, side falls, old ranger signs and alternate trails.</li>
+        <li>Learning shortcuts is the movement mastery. Skilled players beat the pack to better viewpoints.</li>
+        <li>Exploration creates tension: leave the race briefly for a hidden photo spot, or stay with your duck.</li>
+      </ul>
+
+      <h3>Race-day variation</h3>
+      <p>Seeded conditions alter photography and river behavior: morning mist, sun, light rain, spring runoff, low summer flow, autumn leaves and wind.</p>
+
+      <h3>Ribbons & spectator grade</h3>
+      <pre>DUCK VISIBILITY        82%
+PHOTO CHECKPOINTS       7/9
+RACE EVENTS CAPTURED    5/7
+RARE SIGHTINGS          2
+PREDICTIONS             4/5
+ROUTE EFFICIENCY        A
+
+SPECTATOR GRADE         S</pre>
+      <p>The duck may finish 97th while the player earns S rank. Player skill and duck luck stay separate.</p>
+
+      <h3>Long-term loop</h3>
+      <div class="flow">
+        <span>Pick duck</span><b>→</b><span>Receive assignment</span><b>→</b><span>Chase race</span><b>→</b><span>Capture checkpoints</span><b>→</b><span>Finish</span><b>→</b><span>Develop album</span><b>→</b><span>Ribbons / Duck Book / trail progress</span><b>→</b><span>New race</span>
+      </div>
+
+      <h3>Modes</h3>
+      <ul class="tight">
+        <li><b>Classic 100:</b> standard race.</li>
+        <li><b>Grand Derby:</b> larger flock.</li>
+        <li><b>Mystery Duck:</b> tracker disabled.</li>
+        <li><b>Storm Run:</b> high water and dramatic photography.</li>
+        <li><b>Night / Lantern Event:</b> low-light special race.</li>
+        <li><b>Daily Seed:</b> everyone gets the same roster, river state and weather.</li>
+        <li><b>Ghost Runner:</b> compare traversal performance without touching duck physics.</li>
+      </ul>
+    </section>
+
+    <section class="page" id="audio" data-title="09 · Sound & Presentation">
+      <div class="eyebrow">Page 09 · Audio, HUD & spectacle</div>
+      <h2>Hear the next river reveal before you see it.</h2>
+
+      <h3>Audio direction</h3>
+      <ul class="tight">
+        <li>No constant score during the core race. Nature and race sound carry the experience.</li>
+        <li>Layer river sound by local simulated velocity, depth and obstruction.</li>
+        <li>Waterfall low-frequency roar grows naturally as the player approaches.</li>
+        <li>Spatial ambience: birds, insects, wind in canopy, footfalls, roots, bridge creaks, gravel and splashes.</li>
+        <li>Ducks knocking together may make small plastic bumps/squeaks, used sparingly.</li>
+        <li>Festival and finish may use restrained music/crowd energy.</li>
+      </ul>
+
+      <h3>Race presentation</h3>
+      <ul class="tight">
+        <li>Owned duck has a clear number/identifier and optional subtle tracking marker.</li>
+        <li>Leaderboard can be compact and optionally hidden.</li>
+        <li>Picture-in-picture duck cam is optional and should not replace the pleasure of physically finding the race.</li>
+        <li>Finish system records exact crossing order and timestamps from authoritative simulation.</li>
+      </ul>
+
+      <h3>Replay</h3>
+      <p>Race seed + deterministic rules + recorded player command stream enables replay. Replay cameras may include riverbank, overhead, duck-follow and waterfall viewpoints, but replay never changes the recorded outcome.</p>
+    </section>
+
+    <section class="page" id="architecture" data-title="10 · 3JSE Architecture">
+      <div class="eyebrow">Page 10 · Harness contract</div>
+      <h2>Simulation truth. Presentation contract. Three.js witness.</h2>
+      <p class="lede">Fit this game into the existing 3JSE/Atlas harness rather than building a special-case architecture.</p>
+
+      <h3>Required boundaries</h3>
+      <pre>src/
+  sim/             authoritative water, ducks, race, player commands, seeds
+  presentation/    immutable/derived snapshots + commands + debug facts
+  render3d/        Three.js/WebGPU world, materials, instances, animations
+  ui/              HUD, menus, standings, settings, debug panels
+  assets/          manifests, licenses, normalized models/animations
+  tests/           deterministic sim + integration + visual scenarios
+  docs/            design, architecture, testing, performance, third-party</pre>
+
+      <h3>Binding rules</h3>
+      <ol class="tight">
+        <li><b>Simulation is authoritative.</b> Rendering never decides positions, rank or outcomes.</li>
+        <li><b>No Object3D game state.</b> Every duck/player/race object has a stable simulation ID.</li>
+        <li><b>Fixed simulation cadence.</b> Rendering may interpolate but cannot change truth.</li>
+        <li><b>Named deterministic RNG streams.</b> Separate course, roster, release, water variation and cosmetic randomness.</li>
+        <li><b>Explicit commands.</b> Player input becomes simulation commands; command logs support replay.</li>
+        <li><b>Presentation boundary.</b> Three.js reads presentation contracts, not mutable sim internals.</li>
+        <li><b>Headless first-class.</b> Core race simulation tests run without DOM/GPU.</li>
+        <li><b>Witness overlays.</b> Velocity, depth, buoyancy forces, collision proxies, rank, cell streaming and frame budgets are inspectable.</li>
+        <li><b>Atlas semantics.</b> Expose systems/mechanics/feel rather than file-level spaghetti.</li>
+        <li><b>Every meaningful change is tested and browser-verified.</b></li>
+      </ol>
+
+      <h3>Suggested Atlas semantic map</h3>
+      <pre>GAME
+├─ RACE
+│  ├─ Release
+│  ├─ Ranking
+│  ├─ Finish
+│  └─ Replay
+├─ RIVER
+│  ├─ Flow
+│  ├─ Rapids
+│  ├─ Forks
+│  ├─ Waterfalls
+│  └─ Foam / Spray
+├─ DUCKS
+│  ├─ Buoyancy
+│  ├─ Collision
+│  ├─ Roster
+│  └─ Novelty Assets
+├─ PLAYER
+│  ├─ Movement
+│  ├─ Camera
+│  ├─ Trails
+│  └─ Animation
+├─ WORLD
+│  ├─ Terrain
+│  ├─ Redwoods
+│  ├─ Ground Cover
+│  └─ Atmosphere
+└─ PERFORMANCE / DEBUG</pre>
+
+      <h3>FeelSpec examples</h3>
+      <table>
+        <tr><th>System</th><th>Intent</th></tr>
+        <tr><td>Player sprint</td><td>Fast enough to recover from losing sight of the ducks, but not superhero-fast.</td></tr>
+        <tr><td>River</td><td>Natural, sometimes unfair, never obviously spline-driven.</td></tr>
+        <tr><td>Waterfalls</td><td>Terrifyingly energetic but readable; ducks visibly survive the plunge.</td></tr>
+        <tr><td>Forest</td><td>Dense enough to hide geography; never feels like repeating tree wallpaper.</td></tr>
+        <tr><td>Special ducks</td><td>Rare visual discoveries, not a carnival of 50 gimmicks.</td></tr>
+      </table>
+    </section>
+
+    <section class="page" id="performance" data-title="11 · Performance">
+      <div class="eyebrow">Page 11 · Performance & streaming</div>
+      <h2>Spend detail where the camera can prove it exists.</h2>
+
+      <h3>Target</h3>
+      <p><b>60 FPS desktop target</b> on the intended WebGPU class, with quality scaling instead of simulation degradation.</p>
+
+      <h3>Core tactics</h3>
+      <ul class="tight">
+        <li>Use forest/terrain occlusion to reduce active render interest.</li>
+        <li>Instancing/batching for classic ducks, stones, repeated vegetation and ground detail.</li>
+        <li>LOD/impostors for trees; hero assets only near important camera corridors.</li>
+        <li>Stream river cells and adjacent trail/environment cells around player + followed duck.</li>
+        <li>Keep followed/important race entities present even when outside normal visual interest.</li>
+        <li>Do expensive geometry processing/decoding in workers where practical.</li>
+        <li>Use compressed textures/meshes and explicit memory budgets.</li>
+        <li>Do not run full volumetric SPH across the entire river.</li>
+      </ul>
+
+      <h3>Telemetry</h3>
+      <p>Track simulation ms, presentation ms, animation ms, render CPU, GPU frame time, draw calls, triangles, texture memory, visible trees/ducks, active river cells and SPH particle count.</p>
+
+      <h3>Deterministic visual regression mode</h3>
+      <p>Fixed race seed, tick, camera transform, exposure, weather/time, resolution and procedural visual seeds. Disable temporal randomness where possible for screenshot comparison.</p>
+
+      <h3>Stress scenes</h3>
+      <ul class="tight">
+        <li>100 ducks clustered at release gate.</li>
+        <li>100 ducks colliding in narrow granite chute.</li>
+        <li>Grand waterfall with maximum spray + most ducks visible.</li>
+        <li>Dense redwood cathedral with first-person camera at ground level.</li>
+        <li>Long replay/soak run for leaks and sim/render divergence.</li>
+      </ul>
+    </section>
+
+    <section class="page" id="build" data-title="12 · Build Order">
+      <div class="eyebrow">Page 12 · One-shot implementation order</div>
+      <h2>Prove the race before decorating it.</h2>
+
+      <h3>0 — Inspect before changing</h3>
+      <p>Read repo docs/harness contracts, inspect existing assets/tools, run current tests/build, identify the correct extension points. Do not replace working harness systems.</p>
+
+      <h3>1 — Greybox truth slice</h3>
+      <ul class="tight">
+        <li>One descending river course.</li>
+        <li>100 standardized simulated ducks with stable IDs.</li>
+        <li>Release gate, collisions, ranking and finish.</li>
+        <li>First-person player movement that cannot influence ducks.</li>
+        <li>Seeded deterministic headless test and replay reproduction.</li>
+      </ul>
+
+      <h3>2 — River quality</h3>
+      <ul class="tight">
+        <li>Authoritative shallow-water/flow field.</li>
+        <li>Buoyancy and torque derived from water.</li>
+        <li>Rapids, eddies, fork and rejoin.</li>
+        <li>Debug flow vectors / depth / forces.</li>
+      </ul>
+
+      <h3>3 — Water rendering & falls</h3>
+      <ul class="tight">
+        <li>Poseidon-quality optical study/adaptation where compatible.</li>
+        <li>Foam from actual flow facts.</li>
+        <li>One waterfall transition with volumetric/spray zone.</li>
+        <li>Duck falls through and continues in lower authoritative river.</li>
+      </ul>
+
+      <h3>4 — Folded final level</h3>
+      <ul class="tight">
+        <li>Build full descending switchback river.</li>
+        <li>Occlusion-first tree/terrain composition.</li>
+        <li>Player trails and shortcuts.</li>
+        <li>At least one strong reveal per river cell.</li>
+      </ul>
+
+      <h3>5 — Asset pass</h3>
+      <ul class="tight">
+        <li>Sketchfab duck roster + manifests/licenses.</li>
+        <li>Child model + normalized rig.</li>
+        <li>Mixamo animation library + animation director.</li>
+        <li>Redwood/rock/fern/ground environment assets and LODs.</li>
+      </ul>
+
+      <h3>6 — Photography / progression</h3>
+      <ul class="tight">
+        <li>Live camera tool with no simulation pause.</li>
+        <li>Photo checkpoint triggers and deterministic scoring.</li>
+        <li>Persistent River Album and finish album presentation.</li>
+        <li>Spectator assignments, predictions, Duck Book, ribbons and spectator grade.</li>
+        <li>Park exploration / trail discovery progression.</li>
+      </ul>
+
+      <h3>7 — Atmosphere / audio / UX</h3>
+      <ul class="tight">
+        <li>Mountain background, mist, wetness, sun, gold, spray.</li>
+        <li>Spatial nature/water audio.</li>
+        <li>HUD, standings, optional tracker, finish presentation.</li>
+      </ul>
+
+      <h3>8 — Critic / polish gate</h3>
+      <p>Run automated tests, production build, browser verification, deterministic screenshots, performance stress cases and a harsh visual/gameplay critic pass. Fix prototype-grade systems instead of merely documenting them.</p>
+    </section>
+
+    <section class="page" id="done" data-title="13 · Definition of Done">
+      <div class="eyebrow">Page 13 · Acceptance gates</div>
+      <h2>Done means the illusion survives inspection.</h2>
+
+      <ul class="checks">
+        <li>Production build loads and runs in browser.</li>
+        <li>Race is deterministic from seed under fixed rules.</li>
+        <li>100 ducks complete the whole course.</li>
+        <li>Player can never alter race state.</li>
+        <li>All ducks use standardized competitive physics.</li>
+        <li>Novelty duck roster is approximately 10% by default.</li>
+        <li>Race ranking and finish order are authoritative.</li>
+        <li>River flow is not a hidden spline-follow system.</li>
+        <li>At least one real fork changes race paths.</li>
+        <li>At least one eddy can genuinely trap/release ducks.</li>
+        <li>At least two waterfall moments work end-to-end.</li>
+        <li>Water visuals correspond to real river state.</li>
+        <li>First-person movement feels excellent.</li>
+        <li>Live photography never pauses or alters the race.</li>
+        <li>Every major river chapter has at least one strong photo opportunity.</li>
+        <li>Photo checkpoint scoring is deterministic and understandable.</li>
+        <li>End-of-race album uses the player's actual captured frames.</li>
+        <li>River Album persists favorite photos across races.</li>
+        <li>Spectator objectives and predictions never affect duck physics.</li>
+        <li>Duck Book / wildlife journal / trail discoveries persist correctly.</li>
+        <li>High spectator grade is possible regardless of duck finishing position.</li>
+        <li>Third-person child is correctly rigged and animated.</li>
+        <li>Contextual reactions never steal controls.</li>
+        <li>Folded geography is hidden from eye level.</li>
+        <li>Every major reveal looks deliberately composed.</li>
+        <li>Redwoods read as massive and non-repetitive.</li>
+        <li>Ground plane is not visibly empty.</li>
+        <li>Gold shallows are visible but not gamey.</li>
+        <li>Audio leads player toward hidden water sections.</li>
+        <li>Asset licenses and attribution are recorded.</li>
+        <li>Debug overlays expose simulation truth.</li>
+        <li>Deterministic screenshot mode exists.</li>
+        <li>Stress scenes meet acceptable frame budget.</li>
+        <li>No gameplay truth is stored in Three.js Object3D state.</li>
+        <li>Headless race tests work without Three.js.</li>
+        <li>README / architecture / testing / performance docs updated.</li>
+      </ul>
+
+      <div class="rule">FINAL QUALITY BAR: It must still be fun with grey ducks and debug water—and still be beautiful enough that wandering the river without caring who wins feels worthwhile.</div>
+    </section>
+
+    <section class="page one-shot" id="oneshot" data-title="14 · Claude One-Shot">
+      <div class="eyebrow">Page 14 · Direct instruction to the implementation agent</div>
+      <h2>Claude: build the game, not a proposal.</h2>
+
+      <pre id="promptText">You are implementing RUBBER DUCKIE RIVER RACE inside the existing 3JSE / Three.js harness.
+
+Treat this design document and the repo's existing architecture/docs as binding context. Inspect the repository first. Run its current tests/build. Reuse the harness and existing working asset/tool systems rather than replacing them.
+
+CORE GAME:
+A beautiful first-person river-race PHOTOGRAPHER game. About 100 rubber ducks are released into a physically simulated descending river. The player controls only a little boy running alongside them. The player can NEVER affect duck or river outcomes. The core gamification is reaching scenic photography checkpoints before the pack arrives, capturing decisive race moments, rare ducks and wildlife, and ending each race with an album made from the player’s real photographs. Roughly 90% of ducks are classic yellow and roughly 10% are distinctive novelty ducks. The level is a long switchback river folded into dense redwood/Yosemite-like terrain so future sections are hidden by nature. First person is canonical; third person uses a legally acquired humanoid child rig with Mixamo animations.
+
+ARCHITECTURE:
+- Simulation is authoritative; rendering is derived.
+- No Three.js Object3D is authoritative game state.
+- Stable entity IDs.
+- Fixed-timestep deterministic simulation.
+- Named seeded RNG streams.
+- Explicit player command log suitable for replay.
+- src/sim knows nothing about Three.js.
+- render3d reads presentation contracts.
+- Headless deterministic tests remain first-class.
+- Expose debug/witness views for water depth/velocity, duck forces/collision bodies, rank/finish, streaming and performance.
+- Do not fake water-driven outcomes with spline-following ducks.
+
+WATER:
+Use a real downhill flow model suitable for rivers/rapids/eddies/forks. Study Poseidon for high-end WebGPU/TSL water rendering techniques, not as a substitute for river hydrodynamics. Use a Tiamat/SPH-style volumetric zone only where justified, especially waterfalls/plunge pools/spray. Water rendering and foam should derive from simulation facts.
+
+LEVEL:
+Create an intricately folded, descending river with dense redwoods, granite, ferns, logs, mist and mountain background. At player eye height expose no more than two future river bends, ideally one. Alternate obscured trail-running with beautiful river reveals. Include start pool, redwood run, rapids, cathedral grove, horseshoe shortcut, gold shallows, fork, small falls, gorge, grand cascade, final rapids and finish pond.
+
+DUCKS:
+Use a standardized hidden physics body for every racer regardless of visual model. Support buoyancy, drag, torque, collisions, eddies, pileups, forks and waterfall tumbles. Use Sketchfab assets only when legally downloadable; record creator/source/license in manifests and THIRD_PARTY/ATTRIBUTIONS docs. IP-character novelty ducks are prototype-only unless rights are cleared.
+
+PLAYER:
+Excellent first-person movement: walk/run/sprint/jump/vault/simple trail traversal. Optional third-person child. Build a normalized Mixamo animation library for locomotion, traversal, interest and excitement. Contextual animation may flavor movement and idle reactions but never take control from the player.
+
+PHOTOGRAPHY / GAME LOOP:
+Photography is active live gameplay and NEVER pauses the river. The player must physically reach photo positions and capture moments while the simulation continues. Add official and hidden photo checkpoints, deterministic composition/event scoring, race assignments, harmless predictions, Duck Book, wildlife journal, route/trail discovery, ribbons and spectator grades. Finish each race with a scrapbook/contact-sheet album generated from the player's actual frames. Persist the River Album across races. Duck finishing position must never determine player skill grade.
+
+ART:
+Do not reinvent good assets. Prefer excellent legal redwood/sequoia, rock, fern and ground assets; use procedural systems such as Dryad/Gaia ideas only where they improve variation/coverage. Hero assets near the player, LOD/impostors at distance. Dense tactile forest floor. Clear river shallows with stones and occasional metallic gold flakes. Restrained physically coherent atmosphere/post.
+
+EXECUTION:
+Do not stop at scaffolding.
+1. Prove a deterministic greybox 100-duck race end-to-end.
+2. Prove water-driven buoyancy/flow/rapids/fork.
+3. Prove waterfall transition.
+4. Build the folded final course and trail network.
+5. Integrate duck/child/environment assets and animation.
+6. Add the complete photography/progression loop: live camera, photo checkpoints, scoring, album, assignments, predictions, Duck Book, exploration and spectator grade.
+7. Add atmosphere/audio/UI.
+8. Run tests, type-check, production build, browser verification, deterministic screenshots and performance stress scenes.
+9. Fix failures and prototype-grade systems before declaring completion.
+10. Update README, architecture, testing, performance and third-party docs.
+
+DEFINITION OF DONE:
+The browser production build contains a complete race the player can run alongside from release to finish; the river really determines outcomes; the course feels much larger than its footprint; photography is a compelling live race mechanic; scenic checkpoints reward route mastery; the finish produces a memorable album from the player's actual photographs; spectator goals and progression work without influencing race physics; first-person exploration is beautiful; the third-person child works; novelty ducks appear as rare visual surprises; asset rights are tracked; deterministic replay/debugging works; and no important feature is merely claimed without being witnessed and verified.</pre>
+      <button class="action" onclick="copyPrompt()">Copy one-shot directive</button>
+      <p class="small" id="copyStatus"></p>
+
+      <h3>Do not let the agent waste the one-shot on</h3>
+      <p><span class="tag danger">rewriting the harness</span><span class="tag danger">title-screen polish first</span><span class="tag danger">fake spline ducks</span><span class="tag danger">100 bespoke draw calls</span><span class="tag danger">full-river SPH</span><span class="tag danger">unlicensed asset scraping</span><span class="tag danger">placeholder-only completion</span></p>
+    </section>
+
+    <section class="page" id="refs" data-title="15 · References">
+      <div class="eyebrow">Page 15 · Technical references</div>
+      <h2>Study, reuse legally, do not blindly copy.</h2>
+      <table>
+        <tr><th>Reference</th><th>Use</th></tr>
+        <tr><td><a href="https://github.com/owenyuwono/poseidon">Owen Yuwono / Poseidon</a></td><td>Three.js WebGPU/TSL real-time spectral ocean; study high-quality water optics, foam and GPU approach.</td></tr>
+        <tr><td><a href="https://github.com/owenyuwono">Owen Yuwono GitHub</a></td><td>Tiamat SPH fluids, Gaia grass, Dryad procedural trees, Demiurge terrain/atmosphere concepts.</td></tr>
+        <tr><td><a href="https://github.com/owenyuwono/dryad">Dryad</a></td><td>Deterministic procedural tree generation, merged branch mesh, instanced foliage, procedural materials/wind concepts.</td></tr>
+        <tr><td><a href="https://helpx.adobe.com/creative-cloud/help/mixamo-rigging-animation.html">Adobe Mixamo</a></td><td>Custom humanoid rig/animation workflow.</td></tr>
+        <tr><td><a href="https://sketchfab.com/search?type=models&q=rubber%20duck">Sketchfab rubber-duck search</a></td><td>Duck model sourcing. Validate download rights/license model-by-model.</td></tr>
+      </table>
+
+      <h3>Third-party discipline</h3>
+      <p>For every external repository or asset record the URL, exact license, creator, version/commit where applicable, modifications and required notices. If a reference is incompatible or incomplete, reproduce the needed behavior cleanly rather than silently copying it.</p>
+    </section>
+
+    <footer>
+      Rubber Duckie River Race · compact multi-page implementation manual · generated for the existing 3JSE / Atlas one-shot workflow.
+    </footer>
+  </main>
+</div>
+
+<script>
+const pages=[...document.querySelectorAll('.page')];
+const nav=document.getElementById('nav');
+
+pages.forEach((p,i)=>{
+  const b=document.createElement('button');
+  b.textContent=p.dataset.title || p.id;
+  b.dataset.target=p.id;
+  b.onclick=()=>showPage(p.id);
+  nav.appendChild(b);
+});
+
+function showPage(id){
+  pages.forEach(p=>p.classList.toggle('active',p.id===id));
+  [...nav.children].forEach(b=>b.classList.toggle('active',b.dataset.target===id));
+  history.replaceState(null,'','#'+id);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+async function copyPrompt(){
+  const text=document.getElementById('promptText').innerText;
+  const status=document.getElementById('copyStatus');
+  try{
+    await navigator.clipboard.writeText(text);
+    status.textContent='Copied.';
+  }catch(e){
+    status.textContent='Clipboard unavailable; select the text manually.';
+  }
+}
+const initial=location.hash.slice(1);
+showPage(document.getElementById(initial)?initial:'vision');
+</script>
+</body>
+</html>

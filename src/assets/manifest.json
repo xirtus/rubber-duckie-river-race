@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "assets": [
+    {"files": ["bark.jpg", "bark-normal.jpg"], "source": "https://polyhaven.com/a/pine_bark", "creator": "Dimitrios Savva / Poly Haven", "license": "CC0-1.0", "original": ["pine_bark_diff_1k.jpg", "pine_bark_nor_gl_1k.jpg"], "processing": "Renamed; runtime UV tiling."},
+    {"files": ["ground.jpg"], "source": "https://polyhaven.com/a/forest_ground_04", "creator": "Poly Haven contributors", "license": "CC0-1.0", "original": ["forest_ground_04_diff_1k.jpg"], "processing": "Renamed; runtime terrain vertex color tint."},
+    {"files": ["rock.jpg", "rock-normal.jpg"], "source": "https://polyhaven.com/a/rock_boulder_dry", "creator": "Poly Haven contributors", "license": "CC0-1.0", "original": ["rock_boulder_dry_diff_1k.jpg", "rock_boulder_dry_nor_gl_1k.jpg"], "processing": "Renamed; runtime UV tiling."},
+    {"files": ["needles.jpg", "needles-alpha.jpg"], "source": "https://polyhaven.com/a/pine_tree_01", "creator": "Poly Haven contributors", "license": "CC0-1.0", "original": ["pine_tree_01_twig_diff_1k.jpg", "pine_tree_01_twig_alpha_1k.jpg"], "processing": "Renamed; alpha-tested foliage cards on Dryad anchors."},
+    {"files": ["forest-sky.hdr"], "source": "https://polyhaven.com/a/kloofendal_43d_clear", "creator": "Poly Haven contributors", "license": "CC0-1.0", "original": ["kloofendal_43d_clear_1k.hdr"], "processing": "Renamed; runtime RGBE decode and PMREM environment."}
+  ]
+}
