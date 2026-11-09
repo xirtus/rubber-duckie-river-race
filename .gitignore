@@ -2,3 +2,19 @@ node_modules/
 dist/
 test-results/
 .DS_Store
+# --- Standard OS / Editor / Secrets / Build Ignores ---
+._*
+Thumbs.db
+*.swp
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vite/
+playwright-report/
+*.log
+__pycache__/
+*.pyc
+.venv/
+venv/
